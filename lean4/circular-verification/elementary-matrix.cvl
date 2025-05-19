@@ -1,0 +1,99 @@
+#include <civlc.cvh>
+#include <assert.h>
+
+$input int n = 3;
+$input int row;            
+$assume(0 <= row && row < n);
+
+$input double x = 2.0;
+
+$assume(n >= 1);
+$input double M[n][n];
+
+void mulRow(int m, int n, double M[m][n], int row, double scalar) {
+  for (int j = 0; j < n; j++) {
+    M[row][j] = scalar * M[row][j];
+  }
+}
+
+void addMulRow(int m, int n, double M[m][n], int row1, int row2, double scalar) {
+	for (int j = 0; j < n; j++) {
+    M[row1][j] += scalar * M[row2][j];
+  }
+}
+
+void copyMatrix(int m, int n, double src[m][n], double dest[m][n]) {
+  for (int i = 0; i < m; i++) {
+    for (int j = 0; j < n; j++) {
+      dest[i][j] = src[i][j];
+    }
+  }
+}
+
+void identity(int n, double M[n][n]) {
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			if (i == j) M[i][j] = 1.0;
+			else M[i][j] = 0.0;
+		}
+	}
+}
+
+void matMul(int n, double A[n][n], double B[n][n], double C[n][n]) {
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      double sum = 0.0;
+      for (int k = 0; k < n; k++) {
+        sum += A[i][k] * B[k][j];
+      }
+      C[i][j] = sum;
+    }
+  }
+}
+
+int main() {
+	// Elementary Matrix
+	double ID[n][n];
+	identity(n, ID);
+	
+	double elemMat[n][n];
+	copyMatrix(n, n, ID, elemMat);
+	mulRow(n, n, elemMat, row, x);
+	
+	double result[n][n];
+	matMul(n, ID, elemMat, result);
+	
+	// ID * elemMat = elemMat
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      $assert(result[i][j] == elemMat[i][j]);
+    }
+  }
+
+	double elemMatInv[n][n];
+	copyMatrix(n, n, ID, elemMatInv);
+	mulRow(n, n, elemMatInv, row, 1/x);
+	
+	matMul(n, elemMatInv, elemMat, result);
+	
+	// elemMatInv * elemMat = ID
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      $assert(result[i][j] == ID[i][j]);
+    }
+  }
+
+	// matMul(elemMat, M) == mulRow(M)
+	double M1[n][n];
+	copyMatrix(n, n, M, M1);
+	mulRow(n, n, M1, row, x);
+	
+	double M2[n][n];
+	matMul(n, elemMat, M, M2);
+
+	for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      $assert(M2[i][j] == M1[i][j]);
+		}
+	}
+}

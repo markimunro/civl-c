@@ -1,0 +1,72 @@
+#include <civlc.cvh>
+#include <assert.h>
+
+$input int m = 3;
+$input int n = 3;
+
+$input int row1;  
+$input int row2;  
+$input int col;
+$assume(0 <= row1 && row1 < m);
+$assume(0 <= row2 && row2 < m);
+$assume(0 <= col && col < n);
+$assume(row1 != row2);
+
+$input double x = 2.0;
+
+$assume(m >= 1 && n >= 1);
+$input double M1[m][n];
+
+void mulRow(int m, int n, double M[m][n], int row, double scalar) {
+  for (int j = 0; j < n; j++) {
+    M[row][j] = scalar * M[row][j];
+  }
+}
+
+void addMulRow(int m, int n, double M[m][n], int row1, int row2, double scalar) {
+	for (int j = 0; j < n; j++) {
+    M[row1][j] += scalar * M[row2][j];
+  }
+}
+
+void copyMatrix(int m, int n, double src[m][n], double dest[m][n]) {
+  for (int i = 0; i < m; i++) {
+    for (int j = 0; j < n; j++) {
+      dest[i][j] = src[i][j];
+    }
+  }
+}
+
+int main() {
+  double M2[m][n];
+  copyMatrix(m, n, M1, M2);
+	
+	mulRow(m, n, M2, row1, x);
+	
+	// check for altered row
+  $assert($forall (int j: 0..n-1) M2[row1][j] == M1[row1][j] * x);
+	
+	// check for other rows
+  $assert($forall (int i: 0..m-1; int j: 0..n-1 | i != row1) M2[i][j] == M1[i][j]);
+
+	// inv_cancel_left (careful floating point)
+	mulRow(m, n, M2, row1, 1.0/x);
+	
+  $assert($forall (int i: 0..m-1; int j: 0..n-1) M2[i][j] == M1[i][j]);
+
+	double M3[m][n];
+  copyMatrix(m, n, M1, M3);
+	
+	addMulRow(m, n, M3, row1, row2, x);
+	
+	// check for altered row
+  $assert($forall (int j: 0..n-1) M3[row1][j] == M1[row1][j] + M1[row2][j] * x);
+	
+	// check for other rows
+  $assert($forall (int i: 0..m-1; int j: 0..n-1 | i != row1) M3[i][j] == M1[i][j]);
+
+	// neg_cancel_left (careful floating point)
+	addMulRow(m, n, M3, row1, row2, -x);
+	
+  $assert($forall (int i: 0..m-1; int j: 0..n-1) M3[i][j] == M1[i][j]);
+}
